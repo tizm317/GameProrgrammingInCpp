@@ -1,5 +1,7 @@
 Game Programmin In C++
 
+https://bush-wolfsbane-e95.notion.site/Game-Programming-in-C-135495bc019b80e8bfa0d9e62e3ef4b8?pvs=4
+
 Chapter 1
 - Simple Pong : https://youtu.be/Qav9L838o7E
 - 연습 1.1 : https://youtu.be/ZAKibD_ISIs
