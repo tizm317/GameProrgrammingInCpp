@@ -35,11 +35,15 @@ private:
 
 	Uint32 mTicksCount;
 
-	// 공과 패들 좌표
-	Vector2 mPaddlePos;
+
+	// 공
 	Vector2 mBallPos;
-	// 공 속도
 	Vector2 mBallVel;
 
+	// 패들
+	Vector2 mPaddlePos;
 	int mPaddleDir;
+
+	Vector2 mPaddle2Pos;
+	int mPaddle2Dir;
 };

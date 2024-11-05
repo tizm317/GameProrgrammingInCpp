@@ -12,7 +12,8 @@ Game::Game()
 	mIsRunning(true),
 	mRenderer(nullptr),
 	mTicksCount(0),
-	mPaddleDir(0)
+	mPaddleDir(0),
+	mPaddle2Dir(0)
 {
 
 }
@@ -65,6 +66,7 @@ bool Game::Initialize()
 
 	// 공, 패들 초기화
 	mPaddlePos = { 10.0f , HEIGHT / 2 };
+	mPaddle2Pos = { WIDTH - 10.0f , HEIGHT / 2 };
 	mBallPos = { WIDTH / 2 , HEIGHT / 2 };
 	mBallVel = { -200.0f, 235.0f };
 
@@ -119,16 +121,29 @@ void Game::ProcessInput()
 	}
 
 	// 패들 제어
-	mPaddleDir = 0;
-	if (state[SDL_SCANCODE_W])
 	{
-		mPaddleDir -= 1;
-	}
-	if (state[SDL_SCANCODE_S])
-	{
-		mPaddleDir += 1;
-	}
+		// 패들 1 제어
+		mPaddleDir = 0;
+		if (state[SDL_SCANCODE_W])
+		{
+			mPaddleDir -= 1;
+		}
+		if (state[SDL_SCANCODE_S])
+		{
+			mPaddleDir += 1;
+		}
 
+		// 패들 2 제어
+		mPaddle2Dir = 0;
+		if (state[SDL_SCANCODE_I])
+		{
+			mPaddle2Dir -= 1;
+		}
+		if (state[SDL_SCANCODE_K])
+		{
+			mPaddle2Dir += 1;
+		}
+	}
 }
 
 void Game::UpdateGame()
@@ -149,21 +164,43 @@ void Game::UpdateGame()
 		deltaTime = 0.05f;
 	}
 
-	if (mPaddleDir != 0)
+	// 패들 위치 갱신
 	{
-		mPaddlePos.y += mPaddleDir * 300.0f * deltaTime;
+		// 패들1 위치 갱신
+		if (mPaddleDir != 0)
+		{
+			mPaddlePos.y += mPaddleDir * 300.0f * deltaTime;
 
-		// 패들이 화면 영역 벗어나는지 검증
-		const float tmp = paddleH / 2.0f + thickness;
-		if (mPaddlePos.y < tmp)
-		{
-			mPaddlePos.y = tmp;
+			// 패들이 화면 영역 벗어나는지 검증
+			const float tmp = paddleH / 2.0f + thickness;
+			if (mPaddlePos.y < tmp)
+			{
+				mPaddlePos.y = tmp;
+			}
+			else if (mPaddlePos.y > HEIGHT - tmp)
+			{
+				mPaddlePos.y = HEIGHT - tmp;
+			}
 		}
-		else if (mPaddlePos.y > HEIGHT - tmp)
+
+		// 패들2 위치 갱신
+		if (mPaddle2Dir != 0)
 		{
-			mPaddlePos.y = HEIGHT - tmp;
+			mPaddle2Pos.y += mPaddle2Dir * 300.0f * deltaTime;
+
+			// 패들이 화면 영역 벗어나는지 검증
+			const float tmp = paddleH / 2.0f + thickness;
+			if (mPaddle2Pos.y < tmp)
+			{
+				mPaddle2Pos.y = tmp;
+			}
+			else if (mPaddle2Pos.y > HEIGHT - tmp)
+			{
+				mPaddle2Pos.y = HEIGHT - tmp;
+			}
 		}
 	}
+	
 
 	// 공 위치 갱신
 	mBallPos.x += mBallVel.x * deltaTime;
@@ -183,23 +220,38 @@ void Game::UpdateGame()
 			mBallVel.y *= -1;
 		}
 
-		// 우측
-		if (mBallPos.x >= WIDTH - thickness && mBallVel.x > 0.0f)
-		{
-			mBallVel.x *= -1;
-		}
+		//// 우측
+		//if (mBallPos.x >= WIDTH - thickness && mBallVel.x > 0.0f)
+		//{
+		//	mBallVel.x *= -1;
+		//}
 	}
 	
 	// 공과 패들 충돌
-	float diff = fabsf(mBallPos.y - mPaddlePos.y);
-	if (diff <= paddleH / 2.0f &&						// y 차가 충분히 작고
-		/*mBallPos.x <= 25.0f && mBallPos.x >= 20.0f &&*/	
-		// 공이 패들과 나란히 (올바른 x값)
-		mBallPos.x >= mPaddlePos.x - thickness / 2 &&
-		mBallPos.x <= mPaddlePos.x + thickness / 2 &&
-		mBallVel.x < 0.0f)								// 공이 왼쪽으로 이동
 	{
-		mBallVel.x *= -1.0f;
+		// 패들 1
+		float diff = fabsf(mBallPos.y - mPaddlePos.y);
+		if (diff <= paddleH / 2.0f &&						// y 차가 충분히 작고
+			/*mBallPos.x <= 25.0f && mBallPos.x >= 20.0f &&*/
+			// 공이 패들과 나란히 (올바른 x값)
+			mBallPos.x >= mPaddlePos.x - thickness / 2 &&
+			mBallPos.x <= mPaddlePos.x + thickness / 2 &&
+			mBallVel.x < 0.0f)								// 공이 왼쪽으로 이동
+		{
+			mBallVel.x *= -1.0f;
+		}
+
+		// 패들 2
+		diff = fabsf(mBallPos.y - mPaddle2Pos.y);
+		if (diff <= paddleH / 2.0f &&						// y 차가 충분히 작고
+			/*mBallPos.x <= 25.0f && mBallPos.x >= 20.0f &&*/
+			// 공이 패들과 나란히 (올바른 x값)
+			mBallPos.x >= mPaddle2Pos.x - thickness / 2 &&
+			mBallPos.x <= mPaddle2Pos.x + thickness / 2 &&
+			mBallVel.x > 0.0f)								// 공이 왼쪽으로 이동
+		{
+			mBallVel.x *= -1.0f;
+		}
 	}
 }
 
@@ -239,15 +291,15 @@ void Game::GenerateOutput()
 		wall.y = HEIGHT - thickness;
 		SDL_RenderFillRect(mRenderer, &wall);
 
-		// 우측 벽
-		wall =
-		{
-			int(WIDTH) - thickness,
-			0,
-			thickness,
-			int(HEIGHT)
-		};
-		SDL_RenderFillRect(mRenderer, &wall);
+		//// 우측 벽
+		//wall =
+		//{
+		//	int(WIDTH) - thickness,
+		//	0,
+		//	thickness,
+		//	int(HEIGHT)
+		//};
+		//SDL_RenderFillRect(mRenderer, &wall);
 	}
 	
 
@@ -264,16 +316,34 @@ void Game::GenerateOutput()
 	SDL_RenderFillRect(mRenderer, &ball);
 
 	// 패들 그리기
-	SDL_Rect paddle
 	{
-		// 위치 보정
-		static_cast<int>(mPaddlePos.x - thickness / 2),
-		static_cast<int>(mPaddlePos.y - paddleH / 2),
-		thickness,
-		paddleH // thickness * 5
-	};
-	SDL_RenderFillRect(mRenderer, &paddle);
+		// 패들 1
+		SDL_Rect paddle
+		{
+			// 위치 보정
+			static_cast<int>(mPaddlePos.x - thickness / 2),
+			static_cast<int>(mPaddlePos.y - paddleH / 2),
+			thickness,
+			paddleH // thickness * 5
+		};
+		SDL_RenderFillRect(mRenderer, &paddle);
 
+		// 패들 2 
+		/*
+		SDL_Rect paddle2
+		{
+			// 위치 보정
+			static_cast<int>(mPaddle2Pos.x - thickness / 2),
+			static_cast<int>(mPaddle2Pos.y - paddleH / 2),
+			thickness,
+			paddleH // thickness * 5
+		};
+		*/
+
+		paddle.x = static_cast<int>(mPaddle2Pos.x - thickness / 2);
+		paddle.y = static_cast<int>(mPaddle2Pos.y - paddleH / 2);
+		SDL_RenderFillRect(mRenderer, &paddle);
+	}
 
 	// 3. 전면 버퍼, 후면 버퍼 교환
 	SDL_RenderPresent(mRenderer);
