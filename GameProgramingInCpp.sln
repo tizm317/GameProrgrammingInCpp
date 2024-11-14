@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.33328.57
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GameProgramingInCpp", "GameProgramingInCpp\GameProgramingInCpp.vcxproj", "{9104E0F2-7A22-4019-B781-A5AD8F183255}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Chapter1", "GameProgramingInCpp\GameProgramingInCpp.vcxproj", "{9104E0F2-7A22-4019-B781-A5AD8F183255}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Chapter2", "Chapter2\Chapter2.vcxproj", "{827D2A8C-0F29-4846-9948-56BF4F613E23}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,14 @@ Global
 		{9104E0F2-7A22-4019-B781-A5AD8F183255}.Release|x64.Build.0 = Release|x64
 		{9104E0F2-7A22-4019-B781-A5AD8F183255}.Release|x86.ActiveCfg = Release|Win32
 		{9104E0F2-7A22-4019-B781-A5AD8F183255}.Release|x86.Build.0 = Release|Win32
+		{827D2A8C-0F29-4846-9948-56BF4F613E23}.Debug|x64.ActiveCfg = Debug|x64
+		{827D2A8C-0F29-4846-9948-56BF4F613E23}.Debug|x64.Build.0 = Debug|x64
+		{827D2A8C-0F29-4846-9948-56BF4F613E23}.Debug|x86.ActiveCfg = Debug|Win32
+		{827D2A8C-0F29-4846-9948-56BF4F613E23}.Debug|x86.Build.0 = Debug|Win32
+		{827D2A8C-0F29-4846-9948-56BF4F613E23}.Release|x64.ActiveCfg = Release|x64
+		{827D2A8C-0F29-4846-9948-56BF4F613E23}.Release|x64.Build.0 = Release|x64
+		{827D2A8C-0F29-4846-9948-56BF4F613E23}.Release|x86.ActiveCfg = Release|Win32
+		{827D2A8C-0F29-4846-9948-56BF4F613E23}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

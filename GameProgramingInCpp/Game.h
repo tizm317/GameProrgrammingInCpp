@@ -1,12 +1,31 @@
 #pragma once
 
 #include <SDL.h>
+#include <vector>
 
 
 struct Vector2
 {
 	float x;
 	float y;
+
+	Vector2 operator * (Vector2 v)
+	{
+		Vector2 ret = { this->x * v.x , this->y * v.y };
+		return ret;
+	}
+
+	Vector2 operator * (float f)
+	{
+		Vector2 ret = { this->x * f , this->y * f };
+		return ret;
+	}
+};
+
+struct Ball
+{
+	Vector2 pos;
+	Vector2 vel;
 };
 
 class Game
@@ -37,8 +56,9 @@ private:
 
 
 	// °ø
-	Vector2 mBallPos;
-	Vector2 mBallVel;
+	//Vector2 mBallPos;
+	//Vector2 mBallVel;
+	std::vector<Ball*> mBalls;
 
 	// ÆÐµé
 	Vector2 mPaddlePos;

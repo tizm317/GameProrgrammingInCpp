@@ -1,11 +1,14 @@
 #include "Game.h"
+#include "Actor.h"
+#include "Ship.h"
+#include "BGSpriteComponent.h"
 
 // 해상도
 const float WIDTH = 1024.0f;
 const float HEIGHT = 768.0f;
 
-const int thickness = 15;
-const int paddleH = thickness * 5;
+//const int thickness = 15;
+//const int paddleH = thickness * 5;
 
 std::vector<Vector2> dir = 
 {
@@ -22,8 +25,9 @@ Game::Game()
 	mIsRunning(true),
 	mRenderer(nullptr),
 	mTicksCount(0),
-	mPaddleDir(0),
-	mPaddle2Dir(0)
+	//mPaddleDir(0),
+	//mPaddle2Dir(0),
+	mUpdatingActors(false)
 {
 
 }
@@ -44,7 +48,7 @@ bool Game::Initialize()
 	// 2. 윈도우 생성
 	mWindow = SDL_CreateWindow
 	(
-		"Game Programming in C++ (Chapter 1)",
+		"Game Programming in C++ (Chapter 2)",
 		100,
 		//100,
 		30,
@@ -75,23 +79,24 @@ bool Game::Initialize()
 		return false;
 	}
 
-	// 공, 패들 초기화
-	mPaddlePos = { 10.0f , HEIGHT / 2 };
-	mPaddle2Pos = { WIDTH - 10.0f , HEIGHT / 2 };
+	// SDL Image 초기화
+	IMG_Init(IMG_INIT_PNG);
 
-	//mBallPos = { WIDTH / 2 , HEIGHT / 2 };
-	//mBallVel = { -200.0f, 235.0f };
-	
-	for (int i = 0; i < 6; i++)
-	{
-		Vector2 pos = { WIDTH / 2 , HEIGHT / 2 };
-		//Vector2 vel = { -200.0f + i * 10, 235.0f + i * 10};
-		Vector2 vel = Vector2{ 100.0f - 10 * i, 100.0f - 10 * i } * dir[i];
-		//Vector2 vel = Vector2{ 100.0f, 150.0f } * dir[i];
-		mBalls.push_back(new Ball{ pos, vel });
-	}
+	// 데이터 로드
+	LoadData();
 
-	//mBalls.push_back(new Ball{ WIDTH / 2 , HEIGHT / 2, -200.0f, 235.0f });
+	//// 공, 패들 초기화
+	//mPaddlePos = { 10.0f , HEIGHT / 2 };
+	//mPaddle2Pos = { WIDTH - 10.0f , HEIGHT / 2 };
+	//for (int i = 0; i < 6; i++)
+	//{
+	//	Vector2 pos = { WIDTH / 2 , HEIGHT / 2 };
+	//	//Vector2 vel = { -200.0f + i * 10, 235.0f + i * 10};
+	//	Vector2 vel = Vector2{ 100.0f - 10 * i, 100.0f - 10 * i } * dir[i];
+	//	//Vector2 vel = Vector2{ 100.0f, 150.0f } * dir[i];
+	//	mBalls.push_back(new Ball{ pos, vel });
+	//}
+
 
 	return true;
 }
@@ -116,6 +121,150 @@ void Game::Shutdown()
 
 	SDL_Quit();
 }
+
+void Game::AddActor(Actor* actor)
+{
+	// 액터 갱신 중이면 대기 벡터에 추가
+	if (mUpdatingActors)
+	{
+		mPendingActors.push_back(actor);
+	}
+	else
+	{
+		mActors.push_back(actor);
+	}
+}
+
+void Game::RemoveActor(Actor* actor)
+{
+	// 활성화된 액터
+	for (auto it = mActors.begin(); it != mActors.end(); it++)
+	{
+		if (*it == actor)
+		{
+			//mActors.erase(it);
+
+			// Swap to end of vector and pop off (avoid erase copies)
+			std::iter_swap(it, mActors.end() - 1);
+			mActors.pop_back();
+		}
+	}
+
+	// 대기 중인 액터
+	for (auto it = mPendingActors.begin(); it != mPendingActors.end(); it++)
+	{
+		if (*it == actor)
+		{
+			// mPendingActors.erase(it);
+			
+			// Swap to end of vector and pop off (avoid erase copies)
+			std::iter_swap(it, mPendingActors.end() - 1);
+			mPendingActors.pop_back();
+		}
+	}
+}
+
+SDL_Texture* Game::LoadTexture(const char* fileName)
+{
+	// 파일로부터 로딩
+	SDL_Surface* surf = IMG_Load(fileName);
+	if (!surf)
+	{
+		SDL_Log("Failed to load texture file %s", fileName);
+		return nullptr;
+	}
+
+	// 텍스쳐 생성
+	SDL_Texture* text = SDL_CreateTextureFromSurface(mRenderer, surf);
+	SDL_FreeSurface(surf);
+	if (!text)
+	{
+		SDL_Log("Failed to convert surface to texture for %s", fileName);
+		return nullptr;
+	}
+
+	return text;
+}
+
+SDL_Texture* Game::GetTexture(const std::string& fileName)
+{
+	SDL_Texture* tex = nullptr;
+	auto it = mTextures.find(fileName);
+	if (it != mTextures.end())
+	{
+		tex = it->second;
+	}
+	else
+	{
+		// 텍스처 로드
+		//return LoadTexture(textrueName.c_str());
+
+		tex = LoadTexture(fileName.c_str());
+		mTextures.insert({ fileName, tex });
+	}
+
+	return tex;
+}
+
+void Game::LoadData()
+{
+	// 게임 월드 내 모든 액터 생성 담당
+
+	// 1. 플레이어 Ship
+	mShip = new Ship(this);
+	mShip->SetPosition(Vector2(100.0f, 384.0f));
+	mShip->SetScale(1.5f);
+
+	// 2. 배경
+	Actor* actor = new Actor(this);
+	actor->SetPosition(Vector2(WIDTH / 2, HEIGHT / 2));
+
+	BGSpriteComponent* bg = new BGSpriteComponent(actor);
+	bg->SetScreenSize(Vector2(WIDTH, HEIGHT));
+	std::vector<SDL_Texture*> bgTexs =
+	{
+		GetTexture("Assets/Farback01.png"),
+		GetTexture("Assets/Farback02.png"),
+	};
+
+	bg->SetBGTextures(bgTexs);
+	bg->SetScrollSpeed(100.0f);
+
+	bg = new BGSpriteComponent(actor, 50);
+	bg->SetScreenSize(Vector2(WIDTH, HEIGHT));
+	bgTexs =
+	{
+		GetTexture("Assets/Stars.png"),
+		GetTexture("Assets/Stars.png"),
+	};
+	
+	bg->SetBGTextures(bgTexs);
+	bg->SetScrollSpeed(150.0f);
+}
+
+void Game::AddSprite(SpriteComponent* sprite)
+{
+	// 정렬 상태 유지
+	int order = sprite->GetDrawOrder();
+	auto it = mSprites.begin();
+	for (; it != mSprites.end(); it++)
+	{
+		if (order < (*it)->GetDrawOrder())
+		{
+			break;
+		}
+	}
+	mSprites.insert(it, sprite);
+}
+
+void Game::RemoveSprite(SpriteComponent* sprite)
+{
+	// (We can't swap because it ruins ordering)
+	auto it = std::find(mSprites.begin(), mSprites.end(), sprite);
+	if (it != mSprites.end())
+		mSprites.erase(it);
+}
+
 
 void Game::ProcessInput()
 {
@@ -143,6 +292,10 @@ void Game::ProcessInput()
 		mIsRunning = false;
 	}
 
+	// 플레이어 Ship 
+	mShip->ProcessKeyboard(state);
+
+	/*
 	// 패들 제어
 	{
 		// 패들 1 제어
@@ -167,6 +320,7 @@ void Game::ProcessInput()
 			mPaddle2Dir += 1;
 		}
 	}
+	*/
 }
 
 void Game::UpdateGame()
@@ -187,6 +341,34 @@ void Game::UpdateGame()
 		deltaTime = 0.05f;
 	}
 
+	// 모든 액터 갱신
+	mUpdatingActors = true;
+	for (auto actor : mActors)
+		actor->Update(deltaTime);
+	mUpdatingActors = false;
+
+	// 대기 액터 -> 활성 액터 이동
+	for (auto pendingActor : mPendingActors)
+		mActors.push_back(pendingActor);
+	// 대기 액터 비우기
+	mPendingActors.clear();
+
+	// 죽은 액터 처리
+	std::vector<Actor*> deadActors;
+	for (auto actor : mActors)
+	{
+		if (actor->GetState() == Actor::State::EDead)
+		{
+			deadActors.push_back(actor);
+		}
+	}
+
+	for (auto actor : deadActors)
+	{
+		delete actor;
+	}
+
+	/* 이전 내용 --------------------
 	// 패들 위치 갱신
 	{
 		// 패들1 위치 갱신
@@ -251,7 +433,6 @@ void Game::UpdateGame()
 			// 패들 1
 			float diff = fabsf(ball->pos.y - mPaddlePos.y);
 			if (diff <= paddleH / 2.0f &&						// y 차가 충분히 작고
-				/*mBallPos.x <= 25.0f && mBallPos.x >= 20.0f &&*/
 				// 공이 패들과 나란히 (올바른 x값)
 				ball->pos.x >= mPaddlePos.x - thickness / 2 &&
 				ball->pos.x <= mPaddlePos.x + thickness / 2 &&
@@ -263,7 +444,6 @@ void Game::UpdateGame()
 			// 패들 2
 			diff = fabsf(ball->pos.y - mPaddle2Pos.y);
 			if (diff <= paddleH / 2.0f &&						// y 차가 충분히 작고
-				/*mBallPos.x <= 25.0f && mBallPos.x >= 20.0f &&*/
 				// 공이 패들과 나란히 (올바른 x값)
 				ball->pos.x >= mPaddle2Pos.x - thickness / 2 &&
 				ball->pos.x <= mPaddle2Pos.x + thickness / 2 &&
@@ -273,54 +453,7 @@ void Game::UpdateGame()
 			}
 		}
 	}
-
-	// 공 충돌
-	//{
-	//	// 상단
-	//	if (mBallPos.y <= thickness && mBallVel.y < 0.0f)
-	//	{
-	//		mBallVel.y *= -1;
-	//	}
-
-	//	// 하단
-	//	if (mBallPos.y >= HEIGHT - thickness && mBallVel.y > 0.0f)
-	//	{
-	//		mBallVel.y *= -1;
-	//	}
-
-	//	//// 우측
-	//	//if (mBallPos.x >= WIDTH - thickness && mBallVel.x > 0.0f)
-	//	//{
-	//	//	mBallVel.x *= -1;
-	//	//}
-	//}
-	
-	//// 공과 패들 충돌
-	//{
-	//	// 패들 1
-	//	float diff = fabsf(mBallPos.y - mPaddlePos.y);
-	//	if (diff <= paddleH / 2.0f &&						// y 차가 충분히 작고
-	//		/*mBallPos.x <= 25.0f && mBallPos.x >= 20.0f &&*/
-	//		// 공이 패들과 나란히 (올바른 x값)
-	//		mBallPos.x >= mPaddlePos.x - thickness / 2 &&
-	//		mBallPos.x <= mPaddlePos.x + thickness / 2 &&
-	//		mBallVel.x < 0.0f)								// 공이 왼쪽으로 이동
-	//	{
-	//		mBallVel.x *= -1.0f;
-	//	}
-
-	//	// 패들 2
-	//	diff = fabsf(mBallPos.y - mPaddle2Pos.y);
-	//	if (diff <= paddleH / 2.0f &&						// y 차가 충분히 작고
-	//		/*mBallPos.x <= 25.0f && mBallPos.x >= 20.0f &&*/
-	//		// 공이 패들과 나란히 (올바른 x값)
-	//		mBallPos.x >= mPaddle2Pos.x - thickness / 2 &&
-	//		mBallPos.x <= mPaddle2Pos.x + thickness / 2 &&
-	//		mBallVel.x > 0.0f)								// 공이 왼쪽으로 이동
-	//	{
-	//		mBallVel.x *= -1.0f;
-	//	}
-	//}
+	*/
 }
 
 void Game::GenerateOutput()
@@ -340,6 +473,10 @@ void Game::GenerateOutput()
 
 	// 2. 전체 게임 장면 그리기
 
+	for (auto sp : mSprites)
+		sp->Draw(mRenderer);
+
+	/* 이전
 	// 벽 그리기
 	{
 		SDL_SetRenderDrawColor(mRenderer, 255, 255, 255, 255); // 흰색으로 변경
@@ -411,21 +548,13 @@ void Game::GenerateOutput()
 		SDL_RenderFillRect(mRenderer, &paddle);
 
 		// 패들 2 
-		/*
-		SDL_Rect paddle2
-		{
-			// 위치 보정
-			static_cast<int>(mPaddle2Pos.x - thickness / 2),
-			static_cast<int>(mPaddle2Pos.y - paddleH / 2),
-			thickness,
-			paddleH // thickness * 5
-		};
-		*/
+		
 
 		paddle.x = static_cast<int>(mPaddle2Pos.x - thickness / 2);
 		paddle.y = static_cast<int>(mPaddle2Pos.y - paddleH / 2);
 		SDL_RenderFillRect(mRenderer, &paddle);
 	}
+	*/
 
 	// 3. 전면 버퍼, 후면 버퍼 교환
 	SDL_RenderPresent(mRenderer);
