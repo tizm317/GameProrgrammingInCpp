@@ -3,31 +3,13 @@
 #include "Ship.h"
 #include "BGSpriteComponent.h"
 
-// 해상도
-const float WIDTH = 1024.0f;
-const float HEIGHT = 768.0f;
-
-//const int thickness = 15;
-//const int paddleH = thickness * 5;
-
-std::vector<Vector2> dir = 
-{
-	{1.0f, -1.0f},
-	{1.0f, 0.0f},
-	{1.0f, 1.0f},
-	{-1.0f, 1.0f},
-	{-1.0f, 0.0f},
-	{-1.0f, -1.0f}
-};
-
 Game::Game()
 	: mWindow(nullptr),
 	mIsRunning(true),
 	mRenderer(nullptr),
 	mTicksCount(0),
-	//mPaddleDir(0),
-	//mPaddle2Dir(0),
-	mUpdatingActors(false)
+	mUpdatingActors(false),
+	mShip(nullptr)
 {
 
 }
@@ -85,19 +67,6 @@ bool Game::Initialize()
 	// 데이터 로드
 	LoadData();
 
-	//// 공, 패들 초기화
-	//mPaddlePos = { 10.0f , HEIGHT / 2 };
-	//mPaddle2Pos = { WIDTH - 10.0f , HEIGHT / 2 };
-	//for (int i = 0; i < 6; i++)
-	//{
-	//	Vector2 pos = { WIDTH / 2 , HEIGHT / 2 };
-	//	//Vector2 vel = { -200.0f + i * 10, 235.0f + i * 10};
-	//	Vector2 vel = Vector2{ 100.0f - 10 * i, 100.0f - 10 * i } * dir[i];
-	//	//Vector2 vel = Vector2{ 100.0f, 150.0f } * dir[i];
-	//	mBalls.push_back(new Ball{ pos, vel });
-	//}
-
-
 	return true;
 }
 
@@ -119,6 +88,7 @@ void Game::Shutdown()
 	// 렌더러 해제
 	SDL_DestroyRenderer(mRenderer);
 
+	// SDL 닫기
 	SDL_Quit();
 }
 
@@ -127,11 +97,11 @@ void Game::AddActor(Actor* actor)
 	// 액터 갱신 중이면 대기 벡터에 추가
 	if (mUpdatingActors)
 	{
-		mPendingActors.push_back(actor);
+		mPendingActors.emplace_back(actor);
 	}
 	else
 	{
-		mActors.push_back(actor);
+		mActors.emplace_back(actor);
 	}
 }
 
@@ -164,31 +134,11 @@ void Game::RemoveActor(Actor* actor)
 	}
 }
 
-SDL_Texture* Game::LoadTexture(const char* fileName)
-{
-	// 파일로부터 로딩
-	SDL_Surface* surf = IMG_Load(fileName);
-	if (!surf)
-	{
-		SDL_Log("Failed to load texture file %s", fileName);
-		return nullptr;
-	}
-
-	// 텍스쳐 생성
-	SDL_Texture* text = SDL_CreateTextureFromSurface(mRenderer, surf);
-	SDL_FreeSurface(surf);
-	if (!text)
-	{
-		SDL_Log("Failed to convert surface to texture for %s", fileName);
-		return nullptr;
-	}
-
-	return text;
-}
-
 SDL_Texture* Game::GetTexture(const std::string& fileName)
 {
 	SDL_Texture* tex = nullptr;
+
+	// 1. 먼저 텍스처 맵에 있는지 확인
 	auto it = mTextures.find(fileName);
 	if (it != mTextures.end())
 	{
@@ -196,11 +146,11 @@ SDL_Texture* Game::GetTexture(const std::string& fileName)
 	}
 	else
 	{
-		// 텍스처 로드
-		//return LoadTexture(textrueName.c_str());
-
+		// 2. 텍스처 맵에 없는 경우, 텍스처 로드 및 저장
 		tex = LoadTexture(fileName.c_str());
 		mTextures.insert({ fileName, tex });
+
+		//return LoadTexture(textrueName.c_str()); 
 	}
 
 	return tex;
@@ -212,13 +162,16 @@ void Game::LoadData()
 
 	// 1. 플레이어 Ship
 	mShip = new Ship(this);
-	mShip->SetPosition(Vector2(100.0f, 384.0f));
+	mShip->SetPosition(Vector2(100.0f, HEIGHT / 2.0f));
 	mShip->SetScale(1.5f);
 
 	// 2. 배경
+
+	// 배경 담당 Actor 생성
 	Actor* actor = new Actor(this);
 	actor->SetPosition(Vector2(WIDTH / 2, HEIGHT / 2));
 
+	// 배경 컴포넌트 1
 	BGSpriteComponent* bg = new BGSpriteComponent(actor);
 	bg->SetScreenSize(Vector2(WIDTH, HEIGHT));
 	std::vector<SDL_Texture*> bgTexs =
@@ -230,6 +183,8 @@ void Game::LoadData()
 	bg->SetBGTextures(bgTexs);
 	bg->SetScrollSpeed(100.0f);
 
+	// 배경 컴포넌트 2
+		// drawOrder 다르게 설정
 	bg = new BGSpriteComponent(actor, 50);
 	bg->SetScreenSize(Vector2(WIDTH, HEIGHT));
 	bgTexs =
@@ -245,7 +200,7 @@ void Game::LoadData()
 void Game::AddSprite(SpriteComponent* sprite)
 {
 	// 정렬 상태 유지
-	int order = sprite->GetDrawOrder();
+	const int order = sprite->GetDrawOrder();
 	auto it = mSprites.begin();
 	for (; it != mSprites.end(); it++)
 	{
@@ -254,6 +209,8 @@ void Game::AddSprite(SpriteComponent* sprite)
 			break;
 		}
 	}
+
+	// 스프라이트 벡터에 넣기
 	mSprites.insert(it, sprite);
 }
 
@@ -292,35 +249,8 @@ void Game::ProcessInput()
 		mIsRunning = false;
 	}
 
-	// 플레이어 Ship 
+	// 플레이어 Ship 입력 처리
 	mShip->ProcessKeyboard(state);
-
-	/*
-	// 패들 제어
-	{
-		// 패들 1 제어
-		mPaddleDir = 0;
-		if (state[SDL_SCANCODE_W])
-		{
-			mPaddleDir -= 1;
-		}
-		if (state[SDL_SCANCODE_S])
-		{
-			mPaddleDir += 1;
-		}
-
-		// 패들 2 제어
-		mPaddle2Dir = 0;
-		if (state[SDL_SCANCODE_I])
-		{
-			mPaddle2Dir -= 1;
-		}
-		if (state[SDL_SCANCODE_K])
-		{
-			mPaddle2Dir += 1;
-		}
-	}
-	*/
 }
 
 void Game::UpdateGame()
@@ -349,7 +279,7 @@ void Game::UpdateGame()
 
 	// 대기 액터 -> 활성 액터 이동
 	for (auto pendingActor : mPendingActors)
-		mActors.push_back(pendingActor);
+		mActors.emplace_back(pendingActor);
 	// 대기 액터 비우기
 	mPendingActors.clear();
 
@@ -359,7 +289,7 @@ void Game::UpdateGame()
 	{
 		if (actor->GetState() == Actor::State::EDead)
 		{
-			deadActors.push_back(actor);
+			deadActors.emplace_back(actor);
 		}
 	}
 
@@ -367,93 +297,6 @@ void Game::UpdateGame()
 	{
 		delete actor;
 	}
-
-	/* 이전 내용 --------------------
-	// 패들 위치 갱신
-	{
-		// 패들1 위치 갱신
-		if (mPaddleDir != 0)
-		{
-			mPaddlePos.y += mPaddleDir * 300.0f * deltaTime;
-
-			// 패들이 화면 영역 벗어나는지 검증
-			const float tmp = paddleH / 2.0f + thickness;
-			if (mPaddlePos.y < tmp)
-			{
-				mPaddlePos.y = tmp;
-			}
-			else if (mPaddlePos.y > HEIGHT - tmp)
-			{
-				mPaddlePos.y = HEIGHT - tmp;
-			}
-		}
-
-		// 패들2 위치 갱신
-		if (mPaddle2Dir != 0)
-		{
-			mPaddle2Pos.y += mPaddle2Dir * 300.0f * deltaTime;
-
-			// 패들이 화면 영역 벗어나는지 검증
-			const float tmp = paddleH / 2.0f + thickness;
-			if (mPaddle2Pos.y < tmp)
-			{
-				mPaddle2Pos.y = tmp;
-			}
-			else if (mPaddle2Pos.y > HEIGHT - tmp)
-			{
-				mPaddle2Pos.y = HEIGHT - tmp;
-			}
-		}
-	}
-	
-
-	// 공 위치 갱신
-	//mBallPos.x += mBallVel.x * deltaTime;
-	//mBallPos.y += mBallVel.y * deltaTime;
-	for (auto ball : mBalls)
-	{
-		ball->pos.x += ball->vel.x * deltaTime;
-		ball->pos.y += ball->vel.y * deltaTime;
-
-		{
-			// 상단
-			if (ball->pos.y <= thickness && ball->vel.y < 0.0f)
-			{
-				ball->vel.y *= -1;
-			}
-
-			// 하단
-			if (ball->pos.y >= HEIGHT - thickness && ball->vel.y > 0.0f)
-			{
-				ball->vel.y *= -1;
-			}
-		}
-
-		{
-			// 패들 1
-			float diff = fabsf(ball->pos.y - mPaddlePos.y);
-			if (diff <= paddleH / 2.0f &&						// y 차가 충분히 작고
-				// 공이 패들과 나란히 (올바른 x값)
-				ball->pos.x >= mPaddlePos.x - thickness / 2 &&
-				ball->pos.x <= mPaddlePos.x + thickness / 2 &&
-				ball->vel.x < 0.0f)								// 공이 왼쪽으로 이동
-			{
-				ball->vel.x *= -1.0f;
-			}
-
-			// 패들 2
-			diff = fabsf(ball->pos.y - mPaddle2Pos.y);
-			if (diff <= paddleH / 2.0f &&						// y 차가 충분히 작고
-				// 공이 패들과 나란히 (올바른 x값)
-				ball->pos.x >= mPaddle2Pos.x - thickness / 2 &&
-				ball->pos.x <= mPaddle2Pos.x + thickness / 2 &&
-				ball->vel.x > 0.0f)								// 공이 왼쪽으로 이동
-			{		
-				ball->vel.x *= -1.0f;
-			}
-		}
-	}
-	*/
 }
 
 void Game::GenerateOutput()
@@ -472,90 +315,31 @@ void Game::GenerateOutput()
 	SDL_RenderClear(mRenderer);
 
 	// 2. 전체 게임 장면 그리기
-
 	for (auto sp : mSprites)
 		sp->Draw(mRenderer);
 
-	/* 이전
-	// 벽 그리기
-	{
-		SDL_SetRenderDrawColor(mRenderer, 255, 255, 255, 255); // 흰색으로 변경
-
-		// 상단 벽
-		SDL_Rect wall
-		{
-			0,
-			0,
-			1024,
-			thickness
-		};
-
-		SDL_RenderFillRect(mRenderer, &wall);
-
-		// 하단 벽
-		wall.y = HEIGHT - thickness;
-		SDL_RenderFillRect(mRenderer, &wall);
-
-		//// 우측 벽
-		//wall =
-		//{
-		//	int(WIDTH) - thickness,
-		//	0,
-		//	thickness,
-		//	int(HEIGHT)
-		//};
-		//SDL_RenderFillRect(mRenderer, &wall);
-	}
-	
-
-	// 공 그리기
-	for (auto ball : mBalls)
-	{
-		SDL_Rect ball_rect
-		{
-			// 위치 보정
-			static_cast<int>(ball->pos.x - thickness / 2),
-			static_cast<int>(ball->pos.y - thickness / 2),
-			thickness,
-			thickness
-		};
-
-		SDL_RenderFillRect(mRenderer, &ball_rect);
-	}
-
-	//SDL_Rect ball
-	//{
-	//	// 위치 보정
-	//	static_cast<int>(mBallPos.x - thickness / 2),
-	//	static_cast<int>(mBallPos.y - thickness / 2),
-	//	thickness,
-	//	thickness
-	//};
-
-	//SDL_RenderFillRect(mRenderer, &ball);
-
-	// 패들 그리기
-	{
-		// 패들 1
-		SDL_Rect paddle
-		{
-			// 위치 보정
-			static_cast<int>(mPaddlePos.x - thickness / 2),
-			static_cast<int>(mPaddlePos.y - paddleH / 2),
-			thickness,
-			paddleH // thickness * 5
-		};
-		SDL_RenderFillRect(mRenderer, &paddle);
-
-		// 패들 2 
-		
-
-		paddle.x = static_cast<int>(mPaddle2Pos.x - thickness / 2);
-		paddle.y = static_cast<int>(mPaddle2Pos.y - paddleH / 2);
-		SDL_RenderFillRect(mRenderer, &paddle);
-	}
-	*/
-
 	// 3. 전면 버퍼, 후면 버퍼 교환
 	SDL_RenderPresent(mRenderer);
+}
+
+SDL_Texture* Game::LoadTexture(const char* fileName)
+{
+	// 1. 파일로부터 로딩
+	SDL_Surface* surf = IMG_Load(fileName);
+	if (!surf)
+	{
+		SDL_Log("Failed to load texture file %s", fileName);
+		return nullptr;
+	}
+
+	// 2. 텍스쳐 생성
+	SDL_Texture* text = SDL_CreateTextureFromSurface(mRenderer, surf);
+	SDL_FreeSurface(surf);
+	if (!text)
+	{
+		SDL_Log("Failed to convert surface to texture for %s", fileName);
+		return nullptr;
+	}
+
+	return text;
 }

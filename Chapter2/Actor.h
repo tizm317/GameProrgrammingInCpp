@@ -2,7 +2,7 @@
 
 #include "Game.h"
 #include "Component.h"
-
+#include "Math.h"
 
 class Actor
 {

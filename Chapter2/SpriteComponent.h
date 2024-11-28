@@ -12,6 +12,7 @@ public:
 	virtual void Draw(SDL_Renderer* renderer);
 	virtual void SetTexture(SDL_Texture* texture);
 
+	// getters
 	int GetDrawOrder() const { return mDrawOrder; }
 	int GetTexWidth() const { return mTexWidth; }
 	int GetTexHeight() const { return mTexHeight; }
@@ -20,7 +21,7 @@ protected:
 	// 그릴 텍스쳐
 	SDL_Texture* mTexture;
 
-	// 그리기 순서 (작을수록 먼저 그림)
+	// 그리기 순서 (작을수록 먼저 그림 = 뒤)
 	int mDrawOrder;
 
 	// 텍스쳐 너비/높이

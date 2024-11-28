@@ -1,13 +1,6 @@
 #include "Actor.h"
 #include "SpriteComponent.h"
 
-//
-const float Pi = 3.1415926535f;
-float ToDegrees(float radians)
-{
-	return radians * 180.0f / Pi;
-}
-
 SpriteComponent::SpriteComponent(Actor* owner, int drawOrder)
 	: Component(owner)
 	, mTexture(nullptr)
@@ -15,11 +8,13 @@ SpriteComponent::SpriteComponent(Actor* owner, int drawOrder)
 	, mTexHeight(0)
 	, mTexWidth(0)
 {
+	// 게임의 스프라이트 컴포넌트 벡터에 추가
 	mOwner->GetGame()->AddSprite(this);
 }
 
 SpriteComponent::~SpriteComponent()
 {
+	// 게임의 스프라이트 컴포넌트 벡터에서 제거
 	mOwner->GetGame()->RemoveSprite(this);
 }
 
@@ -36,7 +31,7 @@ void SpriteComponent::Draw(SDL_Renderer* renderer)
 		rect.y = static_cast<int> (mOwner->GetPosition().y - rect.h / 2);
 
 		// 스프라이트 그리기
-		SDL_RenderCopyEx(renderer, mTexture, nullptr, &rect, -ToDegrees(mOwner->GetRotation()), nullptr, SDL_FLIP_NONE);
+		SDL_RenderCopyEx(renderer, mTexture, nullptr, &rect, -Math::ToDegrees(mOwner->GetRotation()), nullptr, SDL_FLIP_NONE);
 	}
 }
 

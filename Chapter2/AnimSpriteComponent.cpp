@@ -30,10 +30,15 @@ void AnimSpriteComponent::Update(float deltaTime)
 
 void AnimSpriteComponent::SetAnimTextures(const std::vector<SDL_Texture*>& textures)
 {
+	// 텍스처 벡터 설정
 	mAnimTextures = textures;
+
 	if (mAnimTextures.size() > 0)
 	{
+		// 현재 프레임 0으로 초기화
 		mCurrFrame = 0.0f;
+
+		// 첫번째 프레임 설정
 		SetTexture(mAnimTextures[0]);
 	}
 }

@@ -8,11 +8,13 @@ Actor::Actor(Game* game)
 	mRotation(0.0f),
 	mGame(game) // 의존성 주입
 {
+	// 게임에 액터 추가
 	mGame->AddActor(this);
 }
 
 Actor::~Actor()
 {
+	// 게임에서 액터 제거
 	mGame->RemoveActor(this);
 
 	// Delete Components

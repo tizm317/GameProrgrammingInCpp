@@ -6,10 +6,12 @@
 class AnimSpriteComponent : public SpriteComponent
 {
 public:
+	// 생성자
 	AnimSpriteComponent(class Actor* owner, int drawOrder = 100);
 
 	void Update(float deltaTime) override;
 
+	// 텍스처 설정
 	void SetAnimTextures(const std::vector<SDL_Texture*>& textures);
 
 	// 애니메이션 FPS 얻거나 설정하는 함수

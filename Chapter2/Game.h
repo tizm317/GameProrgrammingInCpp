@@ -5,70 +5,45 @@
 #include <vector>
 #include <unordered_map>
 #include <string>
+
 #include "SpriteComponent.h"
-
-struct Vector2
-{
-	float x;
-	float y;
-
-	// 생성자
-	Vector2(float x_in = 0, float y_in = 0)
-	{
-		x = x_in;
-		y = y_in;
-	}
-
-	Vector2 operator * (Vector2 v)
-	{
-		Vector2 ret = { this->x * v.x , this->y * v.y };
-		return ret;
-	}
-
-	Vector2 operator * (float f)
-	{
-		Vector2 ret = { this->x * f , this->y * f };
-		return ret;
-	}
-};
-
-/*
-struct Ball
-{
-	Vector2 pos;
-	Vector2 vel;
-};
-*/
+#include "Math.h"
 
 class Game
 {
 public:
+	// 생성자
 	Game();
 
-	bool Initialize();
-	void RunLoop();
-	void Shutdown();
+	bool Initialize();	// 초기화
+	void RunLoop();		// 게임 루프 실행
+	void Shutdown();	// 게임 종료
 
 	// 액터 관련 함수
 	void AddActor(class Actor* actor);
 	void RemoveActor(class Actor* actor);
 
 	// 이미지 관련 함수
-	SDL_Texture* LoadTexture(const char* fileName);
 	SDL_Texture* GetTexture(const std::string& fileName);
 
+	// 액터 생성 함수
 	void LoadData();
 
 	// Sprite 관련 함수
 	void AddSprite(class SpriteComponent* sprite);
 	void RemoveSprite(class SpriteComponent* sprite);
 
+	// 해상도 얻기 함수
+	Vector2 GetResolution() const { return Vector2(WIDTH, HEIGHT); }
+
 private:
 	// 게임 루프를 위한 3단계 헬퍼 함수
-	// 입력 처리 / 갱신 / 출력 생성
-	void ProcessInput();
-	void UpdateGame();
-	void GenerateOutput();
+	void ProcessInput();	// 입력 처리
+	void UpdateGame();		// 갱신
+	void GenerateOutput();	// 출력 생성
+
+	// GetTexture 내부에서 실행
+	SDL_Texture* LoadTexture(const char* fileName);
 
 	// SDL 이 생성한 윈도우
 	SDL_Window* mWindow;
@@ -76,25 +51,13 @@ private:
 	// 게임이 계속 실행돼야 하는 지를 판단
 	bool mIsRunning;
 
+	// 렌더러 포인터
 	SDL_Renderer* mRenderer;
 
+	// 이전 프레임 틱 값
 	Uint32 mTicksCount;
 
-	/* 이전 ---------------
-	// 공
-	//Vector2 mBallPos;
-	//Vector2 mBallVel;
-	std::vector<Ball*> mBalls;
-
-	// 패들
-	Vector2 mPaddlePos;
-	int mPaddleDir;
-
-	Vector2 mPaddle2Pos;
-	int mPaddle2Dir;
-	*/
-
-	// 액터
+	// 액터 포인터 벡터 2개
 	std::vector<Actor*> mActors;			// 활성
 	std::vector<Actor*> mPendingActors;		// 비활성
 
@@ -105,8 +68,13 @@ private:
 	// 정렬 필요 X
 	std::unordered_map<std::string, SDL_Texture*> mTextures;
 
-	// Sprite
+	// Sprite 컴포넌트 벡터
 	std::vector<SpriteComponent*> mSprites;
 
+	// 플레이어 Ship 포인터
 	class Ship* mShip;
+
+	// 해상도
+	const float WIDTH = 1024.0f;
+	const float HEIGHT = 768.0f;
 };
