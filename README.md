@@ -6,3 +6,6 @@ Chapter 1
 - Simple 1 Player Pong       : https://youtu.be/Qav9L838o7E
 - 연습 1.1 - 2 Player Pong   : https://youtu.be/ZAKibD_ISIs
 - 연습 1.2 - Mulitiball Pong : https://youtu.be/Szyv_eBfJBI
+
+Chapter 2
+- Side Scroll BG Game : https://youtu.be/8h1fRB08BLU
